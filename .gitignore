@@ -205,3 +205,38 @@ cython_debug/
 marimo/_static/
 marimo/_lsp/
 __marimo__/
+
+# ============================================
+# Project-Specific: Video Tutorial Generator
+# ============================================
+
+# Generated video assets
+raw_videos/
+raw_audio/
+standardized_videos/
+standardized_audio/
+output/
+*.mp4
+*.webm
+*.wav
+*.aac
+*.mp3
+video_list.txt
+audio_list.txt
+concatenated_*.mp4
+concatenated_*.aac
+
+# Temporary repositories
+temp_repos/
+
+# OpenVoice checkpoints (will be downloaded)
+checkpoints_v2/
+
+# Node modules
+node_modules/
+
+# Action manifests (generated, but keep template)
+action_manifest_*.json
+
+# Voice samples (optional - keep your recording)
+# voice_sample.wav

@@ -59,8 +59,6 @@ Works with **any** web technology stack:
 
 Ensure you have the following installed:
 
-bash
-
 ```bash
 # Required
 python >= 3.10
@@ -69,19 +67,22 @@ git
 ffmpeg
 
 # Check your versions
-python --version
-node --version
-ffmpeg -version
+python --version  # Should be 3.10+
+node --version    # Should be 18+
+ffmpeg -version   # Should be installed
 ```
+
+✅ **Your system check:**
+- Python 3.10.12 ✓
+- Node v22.16.0 ✓
+- FFmpeg 4.4.2 ✓
+- Git 2.51.0 ✓
 
 ### Installation
 
-bash
-
 ```bash
-# 1. Clone the repository
-git clone https://github.com/yourusername/github-tutorial-generator.git
-cd github-tutorial-generator
+# 1. Navigate to the repository
+cd /home/scb2/PROJECTS/gitRepos-wsl/repo-to-video
 
 # 2. Create virtual environment
 python -m venv venv
@@ -93,36 +94,31 @@ pip install -r requirements.txt
 # 4. Install Playwright browsers
 playwright install chromium
 
-# 5. Set up OpenVoice V2 (for voice cloning)
-cd lib/OpenVoice
-pip install -r requirements.txt
-python setup.py
-cd ../..
+# 5. Configure Azure OpenAI
+# Your .env file is already configured with Azure OpenAI GPT-5-nano
 
-# 6. Verify installation
-python verify_setup.py
+# 6. Record your voice sample (see VOICE_RECORDING_PROMPT.txt)
+# Save as: voice_sample.wav in the root directory
 ```
 
-### First Tutorial (5 minutes)
-
-bash
+### First Tutorial
 
 ```bash
-# 1. Record a 10-second voice sample
-# Say something like: "Hello, I'm excited to show you this tutorial. 
-# In this video, we'll explore the key features of this application."
+# 1. Record your voice sample (see VOICE_RECORDING_PROMPT.txt for script)
 # Save as: voice_sample.wav
 
 # 2. Generate your first tutorial
 python generate_tutorial.py \
-  --repo https://github.com/facebook/create-react-app \
-  --voice voice_sample.wav \
-  --output my_first_tutorial/
+  https://github.com/sagearbor/context-aware-ai-training \
+  --voice-sample voice_sample.wav \
+  --output output/
 
-# 3. Wait 5-10 minutes (depending on project complexity)
+# 3. The script will prompt you to start the application manually
+#    Follow the setup instructions shown, then press Enter
 
-# 4. Find your video at:
-# my_first_tutorial/tutorial.mp4
+# 4. Wait 5-10 minutes (depending on project complexity)
+
+# 5. Find your video at: output/tutorial.mp4
 ```
 
 ---
@@ -131,54 +127,40 @@ python generate_tutorial.py \
 
 ### Basic Usage
 
-bash
+```bash
+python generate_tutorial.py <github-url>
+```
+
+### With Voice Cloning
 
 ```bash
 python generate_tutorial.py \
-  --repo <github-url> \
-  --voice <path-to-voice-sample.wav>
+  https://github.com/tiangolo/fastapi \
+  --voice-sample my_voice.wav
 ```
 
-### With Custom Configuration
-
-bash
+### With Custom Output Directory
 
 ```bash
 python generate_tutorial.py \
-  --repo https://github.com/tiangolo/fastapi \
-  --voice my_voice.wav \
-  --quality high \
-  --resolution 1920x1080 \
-  --output tutorials/fastapi/ \
-  --bundle  # Include source assets
+  https://github.com/tiangolo/fastapi \
+  --voice-sample my_voice.wav \
+  --output tutorials/fastapi/
 ```
 
-### Local Repository
-
-bash
+### Skip Cloning (Use Existing Repo)
 
 ```bash
-# If you already have the repo cloned
+# If you already have the repo in temp_repos/
 python generate_tutorial.py \
-  --local /path/to/my-project \
-  --voice my_voice.wav
+  https://github.com/user/repo \
+  --skip-clone
 ```
 
-### Batch Processing
+### Help
 
-bash
-
-````bash
-# Process multiple repositories
-python batch_generate.py \
-  --repos repos.txt \
-  --voice my_voice.wav \
-  --output-dir batch_tutorials/
-
-# repos.txt format:
-# https://github.com/user/repo1
-# https://github.com/user/repo2
-# /local/path/to/repo3
+```bash
+python generate_tutorial.py --help
 ```
 
 ---
@@ -495,38 +477,46 @@ using the voice sample at ~/my_voice.wav"
 
 ### Project Structure
 ```
-github-tutorial-generator/
+repo-to-video/
 ├── src/
-│   ├── analyzer/           # Stage 0: Repo analysis
-│   │   ├── tech_detector.py
-│   │   ├── manifest_generator.py
-│   │   └── dev_server.py
-│   ├── recorder/           # Stage 1: Video capture
-│   │   └── playwright_recorder.py
-│   ├── narrator/           # Stage 2: Audio synthesis
-│   │   └── openvoice_tts.py
-│   ├── assembler/          # Stages 3-4: Assembly
-│   │   ├── standardizer.py
-│   │   └── video_builder.py
-│   └── orchestrator.py     # Main pipeline
-├── lib/
-│   └── OpenVoice/          # Voice cloning engine
-├── tests/
-│   ├── test_detector.py
-│   ├── test_recorder.py
-│   └── test_assembler.py
-├── config/
-│   └── config.yaml
-├── docs/
-│   ├── ARCHITECTURE.md
-│   ├── API.md
-│   └── DEPLOYMENT.md
-├── generate_tutorial.py    # CLI entry point
-├── mcp_server.py           # MCP server
-├── requirements.txt
-├── Dockerfile
-└── README.md
-````
+│   ├── analyzers/                  # Stage 0: Technology detection
+│   │   ├── __init__.py
+│   │   ├── base.py                # Base analyzer class
+│   │   ├── detector.py            # Main detection logic
+│   │   ├── nodejs.py              # Node.js/React/Vue/Next.js
+│   │   ├── python_analyzer.py     # FastAPI/Flask/Django
+│   │   ├── static_html.py         # Static HTML sites
+│   │   ├── ruby.py                # Rails
+│   │   ├── php.py                 # PHP
+│   │   └── go_analyzer.py         # Go
+│   ├── stages/                    # Pipeline stages
+│   │   ├── __init__.py
+│   │   ├── stage0_analyze.py      # Repository analysis & manifest generation
+│   │   ├── stage1_capture.py      # Video capture with Playwright
+│   │   ├── stage2_audio.py        # Audio synthesis (OpenVoice V2)
+│   │   ├── stage3_standardize.py  # Asset standardization
+│   │   └── stage4_assemble.py     # Final video assembly
+│   ├── utils/                     # Utility modules
+│   │   ├── __init__.py
+│   │   ├── logger.py              # Colored logging
+│   │   ├── file_utils.py          # File operations
+│   │   └── git_utils.py           # Git operations
+│   ├── config.py                  # Configuration management
+│   └── models.py                  # Data models (ProjectMetadata, ActionManifest)
+├── output/                        # Generated videos and manifests
+├── raw_videos/                    # Raw video segments from Playwright
+├── raw_audio/                     # Raw audio from TTS
+├── standardized_videos/           # Standardized MP4 videos
+├── standardized_audio/            # Standardized AAC audio
+├── temp_repos/                    # Cloned repositories
+├── generate_tutorial.py           # Main CLI entry point
+├── requirements.txt               # Python dependencies
+├── package.json                   # Node.js metadata
+├── .env                          # Environment variables (Azure OpenAI)
+├── .gitignore                    # Git ignore rules
+├── VOICE_RECORDING_PROMPT.txt    # Voice sample recording guide
+└── README.md                     # This file
+```
 
 ### Running Tests
 

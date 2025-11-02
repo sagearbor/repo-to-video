@@ -1,0 +1,48 @@
+================================================================================
+VOICE RECORDING PROMPT FOR OPENVOICE V2 TRAINING
+================================================================================
+
+INSTRUCTIONS:
+- Record this in a quiet environment
+- Speak naturally and clearly at a moderate pace
+- Save as WAV format (44.1kHz or 48kHz, 16-bit recommended)
+- Duration: Aim for 30-60 seconds (minimum 10 seconds)
+- Save the file as: voice_sample.wav
+
+================================================================================
+
+SCRIPT TO READ:
+
+Hello! Welcome to this tutorial on building modern web applications.
+
+In this demonstration, we'll explore key features and functionality that make
+this project unique. We'll walk through the user interface, examine core
+interactions, and see how everything works together seamlessly.
+
+First, we'll start by navigating to the main page and reviewing the layout.
+Then we'll interact with various components, fill out forms, and submit data
+to see the system in action.
+
+Pay close attention to the smooth transitions, responsive design, and intuitive
+user experience. These elements combine to create a professional, polished
+application that users will find easy to navigate and enjoyable to use.
+
+Whether you're a developer looking to understand the architecture, or a user
+wanting to learn the features, this tutorial will guide you through everything
+step by step. Let's get started!
+
+================================================================================
+
+RECORDING TIPS:
+- Read through once before recording to get comfortable
+- Keep a consistent volume throughout
+- Pronounce technical terms clearly (API, UI, database, etc.)
+- Natural pauses between sentences are fine
+- You can re-record if you make a mistake
+
+AFTER RECORDING:
+- Save as: voice_sample.wav
+- Place in the project root directory: /home/scb2/PROJECTS/gitRepos-wsl/repo-to-video/
+- The system will use this to clone your voice for all narration
+
+================================================================================
