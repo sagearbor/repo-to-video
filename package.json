@@ -1,0 +1,21 @@
+{
+  "name": "repo-to-video",
+  "version": "0.1.0",
+  "description": "GitHub Tutorial Video Generator - Automated video tutorial creation from any repository",
+  "main": "generate_tutorial.py",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "video",
+    "tutorial",
+    "automation",
+    "github",
+    "ai",
+    "voice-cloning"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {},
+  "devDependencies": {}
+}
