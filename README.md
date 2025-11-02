@@ -445,9 +445,7 @@ python mcp_server.py --port 3000
 
 Add to `claude_desktop_config.json`:
 
-json
-
-````json
+```json
 {
   "mcpServers": {
     "tutorial-generator": {
@@ -462,8 +460,9 @@ json
 ```
 
 ### Usage in Claude
-```
-"Generate a video tutorial for https://github.com/tiangolo/fastapi 
+
+```text
+"Generate a video tutorial for https://github.com/tiangolo/fastapi
 using the voice sample at ~/my_voice.wav"
 
 → Claude uses the tutorial-generator MCP tool
