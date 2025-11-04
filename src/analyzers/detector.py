@@ -28,22 +28,8 @@ async def detect_tech_stack(repo_path: Path) -> Optional[ProjectMetadata]:
     """
     logger.info(f"Analyzing repository: {repo_path}")
 
-    # Check for tutorial repositories FIRST (highest priority)
-    # Tutorial repos should be detected before checking for web app indicators
-    tutorials_dir = repo_path / 'tutorials'
-    docs_dir = repo_path / 'docs'
-    if tutorials_dir.exists() or docs_dir.exists():
-        logger.info("Detected tutorials/ or docs/ directory, checking for tutorial repository")
-        analyzer = TutorialAnalyzer(repo_path)
-        try:
-            metadata = await analyzer.analyze()
-            if metadata:
-                logger.info(f"Successfully analyzed as {metadata.tech_stack.value}")
-                return metadata
-        except Exception as e:
-            logger.warning(f"Tutorial analyzer failed: {e}")
-
     # Define detectors in priority order
+    # Web app indicators are checked FIRST (most common case)
     detectors = [
         # Node.js ecosystems
         ('package.json', NodeJSAnalyzer),
@@ -81,6 +67,21 @@ async def detect_tech_stack(repo_path: Path) -> Optional[ProjectMetadata]:
             except Exception as e:
                 logger.warning(f"Analyzer {analyzer_class.__name__} failed: {e}")
                 continue
+
+    # Fallback: Check for tutorial/documentation-only repositories
+    # This is LAST RESORT - only if no web app indicators were found
+    tutorials_dir = repo_path / 'tutorials'
+    docs_dir = repo_path / 'docs'
+    if tutorials_dir.exists() or docs_dir.exists():
+        logger.info("No web app detected, checking for tutorial/documentation repository")
+        analyzer = TutorialAnalyzer(repo_path)
+        try:
+            metadata = await analyzer.analyze()
+            if metadata:
+                logger.info(f"Successfully analyzed as {metadata.tech_stack.value}")
+                return metadata
+        except Exception as e:
+            logger.warning(f"Tutorial analyzer failed: {e}")
 
     logger.error("Unable to detect technology stack")
     raise Exception("Unable to detect technology stack. No supported project files found.")
