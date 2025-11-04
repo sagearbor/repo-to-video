@@ -16,7 +16,8 @@ logger = get_logger(__name__)
 
 async def analyze_and_generate_manifest(
     repo_path: Path,
-    repo_url: str = ""
+    repo_url: str = "",
+    external_url: str = None
 ) -> tuple[ProjectMetadata, ActionManifest]:
     """
     Analyze repository and generate action manifest
@@ -24,6 +25,7 @@ async def analyze_and_generate_manifest(
     Args:
         repo_path: Path to the repository
         repo_url: Original repository URL
+        external_url: Optional external URL to use for video capture (instead of localhost)
 
     Returns:
         Tuple of (ProjectMetadata, ActionManifest)
@@ -45,19 +47,20 @@ async def analyze_and_generate_manifest(
 
     # Step 2: Generate action manifest using AI
     logger.info("Generating action manifest with Azure OpenAI...")
-    manifest = await generate_manifest_with_ai(project_metadata)
+    manifest = await generate_manifest_with_ai(project_metadata, external_url=external_url)
 
     logger.info(f"Generated manifest with {len(manifest.actions)} actions")
 
     return project_metadata, manifest
 
 
-async def generate_manifest_with_ai(project_metadata: ProjectMetadata) -> ActionManifest:
+async def generate_manifest_with_ai(project_metadata: ProjectMetadata, external_url: str = None) -> ActionManifest:
     """
     Generate action manifest using Azure OpenAI
 
     Args:
         project_metadata: Project metadata from analysis
+        external_url: Optional external URL to use for video capture (instead of localhost)
 
     Returns:
         ActionManifest
@@ -70,7 +73,7 @@ async def generate_manifest_with_ai(project_metadata: ProjectMetadata) -> Action
     )
 
     # Create prompt
-    prompt = _create_manifest_prompt(project_metadata)
+    prompt = _create_manifest_prompt(project_metadata, external_url=external_url)
 
     # Call Azure OpenAI
     try:
@@ -119,13 +122,16 @@ async def generate_manifest_with_ai(project_metadata: ProjectMetadata) -> Action
     except Exception as e:
         logger.error(f"Failed to generate manifest with AI: {e}")
         logger.info("Falling back to default manifest")
-        return _create_default_manifest(project_metadata)
+        return _create_default_manifest(project_metadata, external_url=external_url)
 
 
-def _create_manifest_prompt(project_metadata: ProjectMetadata) -> str:
+def _create_manifest_prompt(project_metadata: ProjectMetadata, external_url: str = None) -> str:
     """Create prompt for manifest generation"""
 
     features_str = '\n'.join([f"- {feature}" for feature in project_metadata.key_features[:10]])
+
+    # Use external URL if provided, otherwise use localhost
+    target_url = external_url if external_url else f"http://localhost:{project_metadata.default_port}"
 
     prompt = f"""
 You are generating a video tutorial script for a web application.
@@ -145,7 +151,7 @@ The manifest must follow this schema:
 {{
   "tutorial_metadata": {{
     "title": "Tutorial title here (be specific about the app)",
-    "target_url": "http://localhost:{project_metadata.default_port}",
+    "target_url": "{target_url}",
     "video_resolution": "1920x1080"
   }},
   "actions": [
@@ -202,13 +208,16 @@ Return ONLY valid JSON, no additional text or explanation.
     return prompt
 
 
-def _create_default_manifest(project_metadata: ProjectMetadata) -> ActionManifest:
+def _create_default_manifest(project_metadata: ProjectMetadata, external_url: str = None) -> ActionManifest:
     """Create a default manifest as fallback"""
     from ..models import TutorialMetadata, Action, ActionType
 
+    # Use external URL if provided, otherwise use localhost
+    target_url = external_url if external_url else f"http://localhost:{project_metadata.default_port}"
+
     tutorial_metadata = TutorialMetadata(
         title=f"{project_metadata.tech_stack.value.title()} Application Tutorial",
-        target_url=f"http://localhost:{project_metadata.default_port}",
+        target_url=target_url,
         video_resolution="1920x1080"
     )
 

@@ -119,9 +119,13 @@ python generate_tutorial.py \
 
 # 4. Find your video at: output/tutorial.mp4
 
-# Alternative: Manual server management (interactive mode)
+# Alternative 1: Manual server management (interactive mode)
 # python generate_tutorial.py <url> --voice-sample voice_sample.wav
 # (Script will prompt you to start the dev server manually)
+
+# Alternative 2: Use an already-deployed app (no local setup needed)
+# python generate_tutorial.py <github-url> --url https://deployed-app.com
+# (Perfect for apps that require complex setup or are already in production)
 ```
 
 ---
@@ -151,6 +155,22 @@ python generate_tutorial.py \
   --output tutorials/fastapi/
 ```
 
+### Capture from Production/Staging (External URL)
+
+```bash
+# Use when the app is already deployed and running
+python generate_tutorial.py \
+  https://github.com/user/complex-app \
+  --url https://production.example.com \
+  --voice-sample my_voice.wav
+```
+
+**Perfect for:**
+- Apps requiring database setup
+- Apps needing API keys or external services
+- Apps with complex deployment requirements
+- Production/staging environments already running
+
 ### Skip Cloning (Use Existing Repo)
 
 ```bash
@@ -178,6 +198,42 @@ python generate_tutorial.py \
 ```
 
 **Note:** Without `--auto-start`, the script will prompt you to manually start the dev server. If running in a non-interactive environment (like a CI/CD pipeline), you'll get an EOFError. Always use `--auto-start` for automated workflows.
+
+### Use External URL (Skip Local Setup)
+
+```bash
+# Perfect for apps already deployed to production/staging
+# Captures video from a running website while still analyzing the GitHub repo
+python generate_tutorial.py \
+  https://github.com/user/repo \
+  --url https://example.com
+
+# Combine with voice cloning
+python generate_tutorial.py \
+  https://github.com/user/repo \
+  --url https://my-app.herokuapp.com \
+  --voice-sample my_voice.wav
+
+# Skip cloning if repo already analyzed
+python generate_tutorial.py \
+  https://github.com/user/repo \
+  --url https://production.example.com \
+  --skip-clone
+```
+
+**When to use `--url`:**
+- App requires complex setup (database, API keys, environment configuration)
+- App is already deployed to production or staging
+- You want to capture from a live environment
+- Local setup is problematic or time-consuming
+
+**Benefits:**
+- No need to configure .env files or credentials
+- No local server startup required
+- Capture from actual production environment
+- Still gets intelligent tutorial generation from GitHub repo analysis
+
+**Note:** The system still analyzes the GitHub repository to understand the project structure and generate intelligent tutorial steps, but captures video from the external URL instead of a locally-running server.
 
 ### Help
 

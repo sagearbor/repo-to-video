@@ -223,8 +223,7 @@ output/
 *.mp3
 video_list.txt
 audio_list.txt
-concatenated_*.mp4
-concatenated_*.aac
+concatenated_*.*
 
 # Temporary repositories
 temp_repos/
