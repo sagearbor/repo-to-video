@@ -15,12 +15,19 @@ from src.config import config
 from src.utils.logger import setup_logger, get_logger
 from src.utils.git_utils import clone_repository
 from src.utils.file_utils import write_json
+from src.utils.server_manager import DevServerManager
+from src.utils.tutorial_parser import TutorialParser
+from src.models import TechStack
 from src.stages import (
     analyze_and_generate_manifest,
     capture_video_segments,
     synthesize_audio_segments,
     standardize_assets,
     assemble_final_video
+)
+from src.stages.stage1_tutorial_capture import (
+    capture_tutorial_screenshots,
+    create_tutorial_manifest_from_parsed
 )
 
 logger = setup_logger('video_generator')
@@ -30,7 +37,8 @@ async def generate_tutorial(
     github_url: str,
     voice_sample_path: str = None,
     output_dir: str = None,
-    skip_clone: bool = False
+    skip_clone: bool = False,
+    auto_start: bool = False
 ):
     """
     Main pipeline orchestration
@@ -40,6 +48,7 @@ async def generate_tutorial(
         voice_sample_path: Path to voice sample for cloning
         output_dir: Output directory for final video
         skip_clone: Skip cloning if repo already exists
+        auto_start: Automatically start dev server and wait for it to be ready
     """
     print("🚀 GitHub Tutorial Video Generator")
     print("=" * 70)
@@ -78,8 +87,28 @@ async def generate_tutorial(
         project_metadata, manifest = await analyze_and_generate_manifest(repo_path, github_url)
 
         logger.info(f"✓ Detected: {project_metadata.tech_stack.value}")
-        logger.info(f"✓ Port: {project_metadata.default_port}")
-        logger.info(f"✓ Start command: {project_metadata.start_command}")
+
+        # Check if this is a tutorial repository
+        is_tutorial_mode = project_metadata.tech_stack == TechStack.TUTORIAL
+
+        if is_tutorial_mode:
+            logger.info("✓ Tutorial mode detected")
+            logger.info(f"✓ Tutorial files: {len(project_metadata.entry_points)}")
+
+            # Parse tutorials and create manifest
+            parser = TutorialParser(repo_path)
+            tutorials = parser.parse_all_tutorials()
+            logger.info(f"✓ Parsed {len(tutorials)} tutorial structures")
+
+            # Create tutorial-specific manifest
+            manifest = create_tutorial_manifest_from_parsed(
+                tutorials=tutorials,
+                repo_url=github_url,
+                title=project_metadata.readme_summary or "Tutorial Walkthrough"
+            )
+        else:
+            logger.info(f"✓ Port: {project_metadata.default_port}")
+            logger.info(f"✓ Start command: {project_metadata.start_command}")
 
         # Save manifest
         manifest_path = config.paths.output_dir / 'action_manifest.json'
@@ -88,23 +117,69 @@ async def generate_tutorial(
 
         # Stage 1: Capture Video Segments
         logger.info("")
-        logger.info("📹 Stage 1: Video Capture")
+        if is_tutorial_mode:
+            logger.info("📸 Stage 1: Tutorial Screenshot Capture")
+        else:
+            logger.info("📹 Stage 1: Video Capture")
         logger.info("-" * 70)
-        logger.info("⚠️  This stage requires the application to be running!")
-        logger.info(f"   Please start the application manually:")
-        logger.info(f"   cd {repo_path}")
-        for cmd in project_metadata.setup_commands:
-            logger.info(f"   {cmd}")
-        logger.info(f"   {project_metadata.start_command}")
-        logger.info("")
 
-        proceed = input("Press Enter when the application is running, or 'q' to quit: ")
-        if proceed.lower() == 'q':
-            logger.info("Aborted by user")
-            sys.exit(0)
+        server_manager = None
+        try:
+            if is_tutorial_mode:
+                # Tutorial mode: capture screenshots
+                logger.info("📸 Capturing screenshots of tutorial content...")
+                manifest = await capture_tutorial_screenshots(manifest)
+                logger.info(f"✓ Captured {len([a for a in manifest.actions if a.video_segment_file])} screenshots")
+            else:
+                # Web app mode: capture video with Playwright
+                if auto_start:
+                    # Automatic server management
+                    logger.info("🚀 Auto-start mode enabled")
+                    logger.info(f"   Setup commands: {project_metadata.setup_commands}")
+                    logger.info(f"   Start command: {project_metadata.start_command}")
+                    logger.info(f"   Port: {project_metadata.default_port}")
 
-        manifest = await capture_video_segments(manifest)
-        logger.info(f"✓ Captured {len(manifest.actions)} video segments")
+                    server_manager = DevServerManager(
+                        repo_path=repo_path,
+                        start_command=project_metadata.start_command,
+                        port=project_metadata.default_port,
+                        setup_commands=project_metadata.setup_commands
+                    )
+
+                    if not await server_manager.start(timeout=120):
+                        logger.error("❌ Failed to start dev server automatically")
+                        logger.error("   Try running the server manually and use --skip-clone without --auto-start")
+                        sys.exit(1)
+
+                else:
+                    # Manual server management
+                    logger.info("⚠️  This stage requires the application to be running!")
+                    logger.info(f"   Please start the application manually:")
+                    logger.info(f"   cd {repo_path}")
+                    for cmd in project_metadata.setup_commands:
+                        logger.info(f"   {cmd}")
+                    logger.info(f"   {project_metadata.start_command}")
+                    logger.info("")
+
+                    # Check if running non-interactively (no TTY)
+                    try:
+                        proceed = input("Press Enter when the application is running, or 'q' to quit: ")
+                        if proceed.lower() == 'q':
+                            logger.info("Aborted by user")
+                            sys.exit(0)
+                    except EOFError:
+                        logger.error("❌ No TTY available for interactive input")
+                        logger.error("   Use --auto-start flag to automatically start the dev server")
+                        logger.error("   Example: python generate_tutorial.py <url> --auto-start")
+                        sys.exit(1)
+
+                manifest = await capture_video_segments(manifest)
+                logger.info(f"✓ Captured {len(manifest.actions)} video segments")
+
+        finally:
+            # Always stop server if we started it
+            if server_manager:
+                server_manager.stop()
 
         # Save updated manifest
         write_json(manifest_path, manifest.to_dict())
@@ -174,6 +249,12 @@ Examples:
 
   # Skip cloning (use existing repo)
   python generate_tutorial.py https://github.com/user/repo --skip-clone
+
+  # Auto-start dev server (non-interactive mode)
+  python generate_tutorial.py https://github.com/user/repo --auto-start
+
+  # Combination: skip clone + auto-start
+  python generate_tutorial.py https://github.com/user/repo --skip-clone --auto-start
         """
     )
 
@@ -200,6 +281,12 @@ Examples:
         help='Skip cloning, use existing repository in temp_repos/'
     )
 
+    parser.add_argument(
+        '--auto-start',
+        action='store_true',
+        help='Automatically start dev server and wait for it to be ready (non-interactive mode)'
+    )
+
     args = parser.parse_args()
 
     # Run async main
@@ -207,7 +294,8 @@ Examples:
         github_url=args.github_url,
         voice_sample_path=args.voice_sample,
         output_dir=args.output,
-        skip_clone=args.skip_clone
+        skip_clone=args.skip_clone,
+        auto_start=args.auto_start
     ))
 
 

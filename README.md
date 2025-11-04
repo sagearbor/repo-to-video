@@ -111,14 +111,17 @@ playwright install chromium
 python generate_tutorial.py \
   https://github.com/sagearbor/context-aware-ai-training \
   --voice-sample voice_sample.wav \
-  --output output/
+  --output output/ \
+  --auto-start
 
-# 3. The script will prompt you to start the application manually
-#    Follow the setup instructions shown, then press Enter
+# 3. Wait 5-10 minutes (depending on project complexity)
+#    The dev server will start automatically
 
-# 4. Wait 5-10 minutes (depending on project complexity)
+# 4. Find your video at: output/tutorial.mp4
 
-# 5. Find your video at: output/tutorial.mp4
+# Alternative: Manual server management (interactive mode)
+# python generate_tutorial.py <url> --voice-sample voice_sample.wav
+# (Script will prompt you to start the dev server manually)
 ```
 
 ---
@@ -156,6 +159,25 @@ python generate_tutorial.py \
   https://github.com/user/repo \
   --skip-clone
 ```
+
+### Auto-Start Dev Server (Non-Interactive Mode)
+
+```bash
+# Automatically start the dev server and wait for it to be ready
+# Perfect for CI/CD pipelines or running without manual intervention
+python generate_tutorial.py \
+  https://github.com/user/repo \
+  --auto-start
+
+# Combine with other flags
+python generate_tutorial.py \
+  https://github.com/user/repo \
+  --auto-start \
+  --voice-sample my_voice.wav \
+  --skip-clone
+```
+
+**Note:** Without `--auto-start`, the script will prompt you to manually start the dev server. If running in a non-interactive environment (like a CI/CD pipeline), you'll get an EOFError. Always use `--auto-start` for automated workflows.
 
 ### Help
 

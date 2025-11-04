@@ -38,11 +38,10 @@ async def capture_video_segments(manifest: ActionManifest) -> ActionManifest:
                 logger.info(f"Recording action {i+1}/{len(manifest.actions)}: {action.action_id}")
 
                 # Create NEW context for each action to ensure clean video segmentation
+                # Using correct Playwright API: record_video_dir and record_video_size
                 context = await browser.new_context(
-                    record_video={
-                        'dir': str(config.paths.raw_videos_dir),
-                        'size': {'width': width, 'height': height}
-                    },
+                    record_video_dir=str(config.paths.raw_videos_dir),
+                    record_video_size={'width': width, 'height': height},
                     viewport={'width': width, 'height': height}
                 )
 
@@ -67,14 +66,24 @@ async def capture_video_segments(manifest: ActionManifest) -> ActionManifest:
                 # Post-action delay
                 await asyncio.sleep(action.post_action_delay_ms / 1000)
 
-                # Get video path BEFORE closing context
-                video_path = await page.video.path()
-                manifest.actions[i].video_segment_file = str(video_path)
-
-                # Close context to finalize video
+                # Close context to finalize video (this triggers video save)
                 await context.close()
 
-                logger.info(f"✓ Recorded segment: {video_path}")
+                # After closing, the video is saved by Playwright
+                # Get the video path and rename it to our standard format
+                video_path = await page.video.path()
+
+                # Rename to segment_XXX.webm format
+                segment_name = f"segment_{i:03d}.webm"
+                final_path = config.paths.raw_videos_dir / segment_name
+
+                # Move the Playwright-generated video to our standardized name
+                import shutil
+                shutil.move(video_path, final_path)
+
+                manifest.actions[i].video_segment_file = str(final_path)
+
+                logger.info(f"✓ Recorded segment: {final_path}")
 
         finally:
             await browser.close()

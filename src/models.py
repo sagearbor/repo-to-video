@@ -20,6 +20,7 @@ class TechStack(str, Enum):
     GO = "go"
     RUST = "rust"
     STATIC_HTML = "static_html"
+    TUTORIAL = "tutorial"
     UNKNOWN = "unknown"
 
 
