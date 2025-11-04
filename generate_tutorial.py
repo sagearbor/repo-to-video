@@ -38,7 +38,8 @@ async def generate_tutorial(
     voice_sample_path: str = None,
     output_dir: str = None,
     skip_clone: bool = False,
-    auto_start: bool = False
+    auto_start: bool = False,
+    external_url: str = None
 ):
     """
     Main pipeline orchestration
@@ -49,6 +50,7 @@ async def generate_tutorial(
         output_dir: Output directory for final video
         skip_clone: Skip cloning if repo already exists
         auto_start: Automatically start dev server and wait for it to be ready
+        external_url: Use an external URL for video capture (skips local server startup)
     """
     print("🚀 GitHub Tutorial Video Generator")
     print("=" * 70)
@@ -84,7 +86,7 @@ async def generate_tutorial(
             logger.info(f"Using existing repository: {repo_path}")
 
         logger.info("Analyzing project structure...")
-        project_metadata, manifest = await analyze_and_generate_manifest(repo_path, github_url)
+        project_metadata, manifest = await analyze_and_generate_manifest(repo_path, github_url, external_url=external_url)
 
         logger.info(f"✓ Detected: {project_metadata.tech_stack.value}")
 
@@ -132,7 +134,12 @@ async def generate_tutorial(
                 logger.info(f"✓ Captured {len([a for a in manifest.actions if a.video_segment_file])} screenshots")
             else:
                 # Web app mode: capture video with Playwright
-                if auto_start:
+                if external_url:
+                    # External URL mode: skip server management
+                    logger.info("🌐 Using external URL for video capture")
+                    logger.info(f"   Target URL: {external_url}")
+                    logger.info("   Skipping local server startup")
+                elif auto_start:
                     # Automatic server management
                     logger.info("🚀 Auto-start mode enabled")
                     logger.info(f"   Setup commands: {project_metadata.setup_commands}")
@@ -253,6 +260,9 @@ Examples:
   # Auto-start dev server (non-interactive mode)
   python generate_tutorial.py https://github.com/user/repo --auto-start
 
+  # Use external URL (skip local server startup)
+  python generate_tutorial.py https://github.com/user/repo --url https://example.com
+
   # Combination: skip clone + auto-start
   python generate_tutorial.py https://github.com/user/repo --skip-clone --auto-start
         """
@@ -287,7 +297,17 @@ Examples:
         help='Automatically start dev server and wait for it to be ready (non-interactive mode)'
     )
 
+    parser.add_argument(
+        '--url',
+        '-u',
+        help='Use an external URL for video capture (skips local server startup)'
+    )
+
     args = parser.parse_args()
+
+    # Validate argument combinations
+    if args.url and args.auto_start:
+        parser.error("--url and --auto-start cannot be used together (external URL doesn't need server startup)")
 
     # Run async main
     asyncio.run(generate_tutorial(
@@ -295,7 +315,8 @@ Examples:
         voice_sample_path=args.voice_sample,
         output_dir=args.output,
         skip_clone=args.skip_clone,
-        auto_start=args.auto_start
+        auto_start=args.auto_start,
+        external_url=args.url
     ))
 
 

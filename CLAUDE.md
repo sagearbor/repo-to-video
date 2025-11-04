@@ -9,6 +9,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 This is an autonomous video tutorial generator that takes any GitHub repository with a web frontend and produces professional tutorial videos with AI-generated narration. The system analyzes the repository, generates an action plan, records segmented video demonstrations, synthesizes voice narration, and assembles the final video.
 
+The system supports three video capture modes:
+1. **Manual Mode**: User starts the dev server, pipeline captures video
+2. **Auto-Start Mode** (`--auto-start`): Automatically starts and manages dev server
+3. **External URL Mode** (`--url`): Captures from already-running websites (production, staging, etc.)
+
 **Current Status:** ~60% MVP complete. Core infrastructure is built, but Stage 2 (audio synthesis) needs OpenVoice V2 integration.
 
 ---
@@ -246,6 +251,15 @@ python generate_tutorial.py https://github.com/user/repo --skip-clone
 
 # Custom output directory
 python generate_tutorial.py https://github.com/user/repo --output ./my_videos/
+
+# Auto-start dev server (non-interactive mode)
+python generate_tutorial.py https://github.com/user/repo --auto-start
+
+# Use external URL (skip local server startup)
+python generate_tutorial.py https://github.com/user/repo --url https://example.com
+
+# Combination: external URL + voice cloning
+python generate_tutorial.py https://github.com/user/repo --url https://production.example.com --voice-sample voice_sample.wav
 ```
 
 ### Testing Individual Stages
@@ -352,22 +366,32 @@ Currently stubbed in `src/stages/stage2_audio.py`. To implement:
 
 **Assign to:** production-code-developer
 
-### Manual Dev Server Requirement (SHOULD FIX - production-code-developer)
+### Dev Server Management Options
 
-The pipeline currently requires **manually starting the target application** before Stage 1:
+The pipeline offers three modes for server management:
+
+**Option 1: Manual Mode (Default)**
 1. Pipeline clones repo and analyzes it
 2. Displays setup commands and start command
-3. **User must manually run these commands** in another terminal
+3. User manually runs these commands in another terminal
 4. User presses Enter when server is running
 5. Pipeline proceeds with video capture
 
-**Future Enhancement:** Implement automatic dev server management with:
-- Process spawning and control
-- Health check polling (HTTP requests to detect when ready)
+**Option 2: Auto-Start Mode (`--auto-start`)**
+- Automatically spawns dev server process
+- Performs health check polling (HTTP requests to detect when ready)
 - Automatic port detection
 - Process cleanup on completion/failure
+- Perfect for CI/CD and non-interactive environments
 
-**Assign to:** production-code-developer
+**Option 3: External URL Mode (`--url`)**
+- Skips local server startup entirely
+- Captures video from an already-running website (production, staging, etc.)
+- Still analyzes GitHub repo for intelligent tutorial generation
+- Perfect for apps requiring complex setup (databases, API keys, etc.)
+- Example: `--url https://production.example.com`
+
+**Note:** `--auto-start` and `--url` cannot be used together (external URL doesn't need server startup)
 
 ### Playwright Video Recording
 
